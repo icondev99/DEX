@@ -8,7 +8,7 @@ const assert = require("chai").assert;
 // `describe` receives the name of a section of your test suite, and a callback.
 // The callback must define the tests of that section. This callback can't be
 // an async function.
-describe("DEX contract", function () {
+describe("SwapContract contract", function () {
 	// Mocha has four functions that let you hook into the the test runner's
 	// lifecyle. These are: `before`, `beforeEach`, `after`, `afterEach`.
 
@@ -18,8 +18,8 @@ describe("DEX contract", function () {
 	// A common pattern is to declare some variables, and assign them in the
 	// `before` and `beforeEach` callbacks.
 
-	let Token;
-	let hardhatToken;
+	let USDC;
+	let usdc;
 	let owner;
 	let addr1;
 	let addr2;
@@ -29,16 +29,15 @@ describe("DEX contract", function () {
 	// time. It receives a callback, which can be async.
 	beforeEach(async function () {
 		// Get the ContractFactory and Signers here.
-		Token = await ethers.getContractFactory("Token");
-		DEX = await ethers.getContractFactory("DEX");
+		USDC = await ethers.getContractFactory("USDC");
+		SwapContract = await ethers.getContractFactory("SwapContract");
 		[owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
 		// To deploy our contract, we just have to call Token.deploy() and await
 		// for it to be deployed(), which happens once its transaction has been
 		// mined.
-		hardhatToken = await Token.deploy();
-		dex = await DEX.deploy(hardhatToken.address);
-
+		usdc = await USDC.deploy();
+		swapcontract = await SwapContract.deploy(usdc.address);
 		provider = await waffle.provider;
 
 	});
@@ -49,11 +48,11 @@ describe("DEX contract", function () {
 		// tests. It receives the test name, and a callback function.
 
 		it("Initial balance in the contract must be 0", async function () {
-			let dexBalance = await hardhatToken.balanceOf(hardhatToken.address)
+			let dexBalance = await usdc.balanceOf(usdc.address)
 			dexBalance = dexBalance.toString()
 			assert.equal(dexBalance, '0')
 
-			dexBalance = await provider.getBalance(dex.address)
+			dexBalance = await provider.getBalance(swapcontract.address)
 			dexBalance = dexBalance.toString()
 			assert.equal(dexBalance, '0')
 		});
@@ -64,7 +63,7 @@ describe("DEX contract", function () {
 		it("Seller should hold try to sell some amount", async function () {
 			//Try to sell 50 tokens
 			try {
-				dex.connect(addr1).sell(0)
+				swapcontract.connect(addr1).sell(0)
 			} catch (error) {
 				const errorMessage = 'You need to sell at least some token';
 				const errorValue = error.message.search(errorMessage);
@@ -74,40 +73,40 @@ describe("DEX contract", function () {
 		it("Seller should hold tokens before trying to sell", async function () {
 			//Try to sell 50 tokens
 			try {
-				dex.connect(addr1).sell(50)
+				swapcontract.connect(addr1).sell(50)
 			} catch (error) {
 				const errorMessage = 'Not enough balance';
 				const errorValue = error.message.search(errorMessage);
 				assert.isAtLeast(errorValue, 0);
 			}
-			await hardhatToken.transfer(addr1.address, 50)
+			await usdc.transfer(addr1.address, 50)
 		});
-		it("Seller should allow DEX before trying to sell", async function () {
+		it("Seller should allow SwapContract before trying to sell", async function () {
 			//Try to sell 50 tokens
 			try {
-				dex.connect(addr1).sell(50)
+				swapcontract.connect(addr1).sell(50)
 			} catch (error) {
 				const errorMessage = 'Check the total allowance';
 				const errorValue = error.message.search(errorMessage);
 				assert.isAtLeast(errorValue, 0);
 			}
-			await hardhatToken.approve(dex.address, 50)
-			dex.connect(addr1).sell(50)
+			await usdc.approve(swapcontract.address, 50)
+			swapcontract.connect(addr1).sell(50)
 		});
 	});
 
 	// describe("Buy", function () {
 	// 	it("Contract should hold tokens to buy", async function () {
 	// 		// Try to buy 50 tokens
-	// 		dexBalance = await hardhatToken.balanceOf(dex.address)
+	// 		dexBalance = await usdc.balanceOf(swapcontract.address)
 	// 		dexBalance = dexBalance.toString()
 	// 		console.log(dexBalance)
 
-	// 		dexBalance = await provider.getBalance(dex.address)
+	// 		dexBalance = await provider.getBalance(swapcontract.address)
 	// 		dexBalance = dexBalance.toString()
 	// 		console.log(dexBalance)
 	// 		try {
-	// 			dex.buy({ value: 0 })
+	// 			swapcontract.buy({ value: 0 })
 	// 		} catch (error) {
 	// 			const errorMessage = ''
 	// 			console.log(error.message)
